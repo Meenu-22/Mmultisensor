@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Simulation dashboard for the IGDTUW B.Tech project: IoT-Based Comprehensive Disaster Management System.">
+<title>IoT Disaster Management System – Simulation Dashboard</title>
+<style>
+/* =========================================================================
+   1. DESIGN TOKENS
+   Palette: navy #0B1F3A, emerald #0E9F6E, white, grey #F2F4F6.
+   Red #C0392B and amber #F1C40F are used ONLY for status.
+   Spacing follows an 8 px grid (--s1 = 8px).
+   ========================================================================= */
+:root {
+  --navy: #0B1F3A;
+  --emerald: #0E9F6E;
+  --red: #C0392B;
+  --amber: #F1C40F;
+  --white: #FFFFFF;
+  --grey: #F2F4F6;
+
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 40px; --s6: 48px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Light theme (default) */
+  --bg: #F2F4F6;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --text: #0B1F3A;
+  --muted: #4A5A70;
+  --border: #DCE1E8;
+  --accent-text: #087A54;
+  --focus: #0E9F6E;
+  --shadow: 0 1px 2px rgba(11, 31, 58, 0.06), 0 4px 16px rgba(11, 31, 58, 0.06);
+  --water: #2F6690;
+  --chart-dist: #0E9F6E;
+  --chart-gas: #0B1F3A;
+  --chart-grid: #E3E7EC;
+  --led-off: #D5DAE1;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* Dark theme: explicit choice, or the system preference when no choice is set */
+:root[data-theme="dark"] {
+  --bg: #071629;
+  --surface: #0E2442;
+  --surface-2: #122C50;
+  --text: #F2F4F6;
+  --muted: #A9B7CA;
+  --border: #213E66;
+  --accent-text: #3CCB98;
+  --focus: #3CCB98;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --water: #3F80B8;
+  --chart-dist: #3CCB98;
+  --chart-gas: #F2F4F6;
+  --chart-grid: #1D3A60;
+  --led-off: #2A4468;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #071629;
+    --surface: #0E2442;
+    --surface-2: #122C50;
+    --text: #F2F4F6;
+    --muted: #A9B7CA;
+    --border: #213E66;
+    --accent-text: #3CCB98;
+    --focus: #3CCB98;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+    --water: #3F80B8;
+    --chart-dist: #3CCB98;
+    --chart-gas: #F2F4F6;
+    --chart-grid: #1D3A60;
+    --led-off: #2A4468;
+  }
+}
+
+/* =========================================================================
+   2. BASE
+   ========================================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-width: 360px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  transition: background-color 200ms var(--ease), color 200ms var(--ease);
+}
+h1, h2, h3, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+code { font-family: var(--font-mono); font-size: 0.9em; overflow-wrap: anywhere; }
+svg { flex-shrink: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: var(--s2); top: -48px; z-index: 50;
+  background: var(--white); color: var(--navy); padding: var(--s1) var(--s2);
+  border-radius: var(--radius-sm); font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: var(--s1); }
+.wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 var(--s2); }
+@media (min-width: 768px) { .wrap { padding: 0 var(--s3); } }
+
+/* =========================================================================
+   3. HEADER + TABS
+   ========================================================================= */
+.site-header { background: var(--navy); color: var(--white); }
+.header-inner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--s2); padding-top: var(--s2); padding-bottom: var(--s2);
+}
+.brand { display: flex; align-items: flex-start; gap: var(--s2); min-width: 0; flex: 1 1 420px; }
+.brand-mark { width: 40px; height: 40px; border-radius: 10px; background: var(--emerald); display: grid; place-items: center; }
+.brand h1 { font-size: 18px; line-height: 1.3; font-weight: 700; letter-spacing: -0.01em; }
+.subtitle { font-size: 13px; color: #C5D0DE; margin-top: 2px; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); }
+
+.mode-badge {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid rgba(255, 255, 255, 0.7); color: var(--white);
+}
+.mode-badge[data-mode="serial"] { background: var(--emerald); border-color: var(--emerald); color: var(--navy); }
+
+.hbtn {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  min-height: 36px; padding: 6px 12px; border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--white); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background-color 150ms var(--ease);
+}
+.hbtn:hover { background: rgba(255, 255, 255, 0.16); }
+.hbtn:focus-visible { outline-color: var(--emerald); }
+
+.popover-wrap { position: relative; }
+.popover {
+  position: absolute; right: 0; top: calc(100% + var(--s1)); z-index: 40;
+  width: min(300px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: var(--s2);
+  transform-origin: top right;
+  animation: pop-in 160ms var(--ease);
+}
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.popover h2 { font-size: 15px; margin-bottom: var(--s1); }
+.popover dl { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s2); margin: 0; align-items: center; }
+.popover dd { margin: 0; font-size: 14px; }
+.popover p { font-size: 13px; color: var(--muted); margin-top: var(--s2); }
+kbd {
+  display: inline-block; min-width: 28px; text-align: center;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px;
+  border: 1px solid var(--border); border-bottom-width: 2px; background: var(--surface-2);
+}
+
+.tabs { display: flex; gap: var(--s3); overflow-x: auto; scrollbar-width: none; }
+.tab {
+  position: relative; background: none; border: 0; cursor: pointer; white-space: nowrap;
+  padding: 12px 0 14px; color: #C5D0DE; font-weight: 600; font-size: 14px;
+  display: inline-flex; align-items: center; gap: var(--s1);
+  transition: color 150ms var(--ease);
+}
+.tab:hover { color: var(--white); }
+.tab[aria-selected="true"] { color: var(--white); }
+.tab[aria-selected="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: var(--emerald); border-radius: 3px 3px 0 0;
+}
+.tab .count {
+  font-size: 12px; min-width: 22px; padding: 0 6px; border-radius: 999px; text-align: center;
+  background: rgba(255, 255, 255, 0.14); color: var(--white);
+}
+
+/* =========================================================================
+   4. SHARED COMPONENTS: cards, buttons, chips, tags, fields
+   ========================================================================= */
+main { padding-top: var(--s3); padding-bottom: var(--s5); }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: var(--s2);
+  transition: background-color 200ms var(--ease), border-color 200ms var(--ease);
+}
+@media (min-width: 768px) { .card { padding: var(--s3); } }
+.card-title { font-size: 16px; font-weight: 700; }
+.card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s1) var(--s2); margin-bottom: var(--s2); }
+.hint { font-size: 13px; color: var(--muted); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+  min-height: 40px; padding: 8px 16px; border-radius: var(--radius-sm); white-space: nowrap;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  transition: background-color 150ms var(--ease), border-color 150ms var(--ease), transform 120ms var(--ease);
+}
+.btn:hover { background: var(--surface-2); border-color: var(--muted); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--navy); border-color: var(--navy); color: var(--white); }
+.btn-primary:hover { background: #163257; border-color: #163257; }
+:root[data-theme="dark"] .btn-primary { background: var(--emerald); border-color: var(--emerald); color: var(--navy); }
+:root[data-theme="dark"] .btn-primary:hover { background: #12B37D; border-color: #12B37D; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-primary { background: var(--emerald); border-color: var(--emerald); color: var(--navy); }
+  :root:not([data-theme="light"]) .btn-primary:hover { background: #12B37D; border-color: #12B37D; }
+}
+
+/* Status chips: colour + icon + text, never colour alone */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 2px 10px 2px 6px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+}
+.chip svg { width: 14px; height: 14px; }
+.chip-NORMAL { background: var(--emerald); color: var(--navy); }
+.chip-CAUTION { background: var(--amber); color: var(--navy); }
+.chip-DANGER { background: var(--red); color: var(--white); }
+.chip-INFO { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px;
+}
+.tag-demo { color: var(--accent-text); border: 1px solid currentColor; }
+.tag-proposed { color: var(--muted); border: 1px dashed var(--muted); }
+.tag-exp { color: var(--text); border: 1px solid var(--text); }
+
+.field { display: grid; gap: 4px; }
+.field label { font-size: 14px; font-weight: 600; }
+.field input[type="number"], select {
+  width: 100%; min-height: 40px; padding: 8px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2);
+}
+.field input[aria-invalid="true"] { border-color: var(--red); border-width: 2px; }
+.field .help { font-size: 12px; color: var(--muted); }
+.check-row { display: flex; align-items: center; gap: var(--s1); font-size: 14px; font-weight: 600; cursor: pointer; }
+.check-row input { width: 18px; height: 18px; accent-color: var(--emerald); margin: 0; }
+input[type="range"] { width: 100%; accent-color: var(--emerald); height: 28px; margin: 0; cursor: pointer; }
+input[type="range"]:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* =========================================================================
+   5. DASHBOARD
+   ========================================================================= */
+/* 5a. Overall status banner — the primary element of the page */
+.banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3);
+  padding: var(--s3); border-radius: var(--radius);
+  transition: background-color 200ms var(--ease), color 200ms var(--ease);
+}
+.banner[data-level="NORMAL"] { background: var(--emerald); color: var(--navy); }
+.banner[data-level="CAUTION"] { background: var(--amber); color: var(--navy); }
+.banner[data-level="DANGER"] { background: var(--red); color: var(--white); }
+.banner-icon svg { width: 56px; height: 56px; display: block; }
+.banner-text { flex: 1 1 280px; min-width: 0; }
+.banner-label { font-size: 13px; font-weight: 600; opacity: 0.85; }
+.banner-level { font-size: 36px; line-height: 1.1; font-weight: 800; letter-spacing: 0.01em; }
+.banner-reason { font-size: 17px; font-weight: 600; margin-top: 4px; }
+.banner-also { list-style: none; margin: 0; padding: 0; font-size: 14px; font-weight: 600; display: grid; gap: 4px; }
+.banner-also:empty { display: none; }
+.banner-also li { display: flex; align-items: center; gap: 6px; }
+.banner-also svg { width: 16px; height: 16px; }
+
+/* 5b. Demo toolbar */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); margin: var(--s2) 0 var(--s3); }
+.demo-progress { display: flex; align-items: center; gap: var(--s2); flex: 1 1 260px; min-width: 0; }
+.progress { flex: 1; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.progress span { display: block; height: 100%; width: 100%; background: var(--emerald); transform-origin: left; transform: scaleX(0); transition: transform 200ms linear; }
+.demo-phase { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+
+/* 5c. Grid */
+.dash-grid { display: grid; gap: var(--s3); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .dash-grid { grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: var(--s3); min-width: 0; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px var(--s2); margin-bottom: var(--s2); }
+.section-head h2 { font-size: 18px; font-weight: 700; }
+
+/* 5d. Sensor cards: shared structure so values and controls align across a row */
+.sensor-grid { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.sensor { display: flex; flex-direction: column; gap: var(--s2); }
+.sensor-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sensor-icon {
+  width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+}
+.sensor-head h3 { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.sensor-head .tag { margin-top: 2px; }
+.sensor-value { display: flex; align-items: center; justify-content: space-between; gap: var(--s1); min-height: 36px; }
+.sensor-value output { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.sensor-value .state-text { font-size: 18px; }
+.sensor-control { margin-top: auto; display: grid; gap: 6px; }
+.sensor-control > label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.sensor-foot { font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: var(--s1); }
+.sensor-foot strong { color: var(--text); }
+
+/* Toggle switch (button role="switch") */
+.switch {
+  display: inline-flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 44px; padding: 6px 12px 6px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; text-align: left;
+  transition: border-color 150ms var(--ease);
+}
+.switch:hover { border-color: var(--muted); }
+.switch:disabled { opacity: 0.5; cursor: not-allowed; }
+.switch-track {
+  position: relative; width: 44px; height: 26px; border-radius: 999px; flex-shrink: 0;
+  background: var(--led-off); transition: background-color 150ms var(--ease);
+}
+.switch-thumb {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--white); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 160ms var(--ease);
+}
+.switch[aria-checked="true"] .switch-track { background: var(--emerald); }
+.switch[aria-checked="true"] .switch-thumb { transform: translateX(18px); }
+.switch-label { flex: 1; font-size: 14px; font-weight: 600; }
+.switch-state { font-size: 12px; font-weight: 700; color: var(--muted); }
+
+/* 5e. Alert indicators */
+.indicators { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s2); }
+.leds { display: flex; gap: var(--s3); list-style: none; margin: 0; padding: 0; }
+.led-item { display: grid; justify-items: center; gap: 6px; font-size: 12px; text-align: center; }
+.led {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--led-off);
+  border: 2px solid var(--border);
+  transition: background-color 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.led-green.on { background: var(--emerald); border-color: var(--emerald); box-shadow: 0 0 0 4px rgba(14, 159, 110, 0.25), 0 0 18px rgba(14, 159, 110, 0.6); }
+.led-yellow.on { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.25), 0 0 18px rgba(241, 196, 15, 0.6); }
+.led-red.on { background: var(--red); border-color: var(--red); box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.25), 0 0 18px rgba(192, 57, 43, 0.65); animation: led-pulse 900ms ease-in-out infinite; }
+@keyframes led-pulse { 50% { box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.2), 0 0 8px rgba(192, 57, 43, 0.35); } }
+.led-name { font-weight: 700; }
+.led-state { color: var(--muted); font-weight: 600; }
+.led-item.on .led-state { color: var(--text); }
+
+.buzzer { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.buzzer-icon { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); }
+.buzzer-icon .wave { opacity: 0; }
+.buzzer.sounding .buzzer-icon { border-color: var(--red); }
+.buzzer.sounding .buzzer-icon svg { animation: buzz 240ms linear infinite; }
+.buzzer.sounding .wave-1 { animation: wave 700ms ease-out infinite; }
+.buzzer.sounding .wave-2 { animation: wave 700ms ease-out 120ms infinite; }
+@keyframes buzz { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@keyframes wave { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+.buzzer-text strong { display: block; font-size: 14px; }
+.buzzer-text span { font-size: 13px; color: var(--muted); }
+.sound-row { margin-top: var(--s2); display: flex; flex-wrap: wrap; gap: var(--s1); align-items: center; }
+
+/* 5f. Water tank */
+.tank-wrap { display: flex; gap: var(--s2); align-items: center; }
+.tank-svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
+.tank-svg .tank-wall { fill: none; stroke: var(--text); stroke-width: 2.5; }
+.tank-svg .tank-bg { fill: var(--surface-2); }
+.tank-svg .water { fill: var(--water); transform-box: fill-box; transform-origin: bottom; transition: transform 220ms var(--ease); }
+.tank-svg .lbl { fill: var(--text); font: 600 11px var(--font-ui); }
+.tank-svg .lbl-muted { fill: var(--muted); font: 500 10px var(--font-ui); }
+.tank-svg .line-caution { stroke: var(--amber); stroke-width: 2.5; stroke-dasharray: 6 4; }
+.tank-svg .line-danger { stroke: var(--red); stroke-width: 2.5; stroke-dasharray: 6 4; }
+.tank-svg .sensor-box { fill: var(--navy); }
+.tank-svg .beam { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.tank-readout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); margin-top: var(--s2); }
+.tank-readout div { padding: var(--s1) 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.tank-readout dt { font-size: 12px; color: var(--muted); }
+.tank-readout dd { margin: 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* 5g. Chart */
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px var(--s2); font-size: 12px; color: var(--muted); list-style: none; margin: 0; padding: 0; }
+.chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 18px; height: 0; border-top: 3px solid; }
+.swatch.dashed { border-top-style: dashed; border-top-width: 2px; }
+.chart-box { position: relative; height: 260px; margin-top: var(--s2); }
+#chart { width: 100%; height: 100%; display: block; }
+
+/* 5h. Settings + experimental */
+.settings-form { display: grid; gap: var(--s2); }
+.form-error { color: var(--red); font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: flex-start; }
+:root[data-theme="dark"] .form-error { color: #FF8A7D; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .form-error { color: #FF8A7D; } }
+.form-error:empty, .form-ok:empty { display: none; }
+.form-ok { color: var(--accent-text); font-size: 13px; font-weight: 600; }
+.form-actions { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.experimental { border-style: dashed; }
+.experimental p { font-size: 13px; color: var(--muted); margin-bottom: var(--s2); }
+.serial-controls { display: grid; gap: var(--s1); margin-top: var(--s2); }
+.serial-msg { font-size: 13px; color: var(--text); }
+.serial-msg:empty { display: none; }
+
+/* =========================================================================
+   6. EVENT LOG
+   ========================================================================= */
+.log-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s2); }
+.log-head h2 { font-size: 20px; }
+.log-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s1); }
+.log-tools .field { min-width: 150px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.log-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+.log-table th { text-align: left; font-size: 12px; font-weight: 700; color: var(--muted); padding: 10px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.log-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.log-table tr:last-child td { border-bottom: 0; }
+.log-table td.time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.log-table td.src { font-weight: 600; white-space: nowrap; }
+.empty { text-align: center; padding: var(--s6) var(--s2); color: var(--muted); }
+.empty svg { margin: 0 auto var(--s2); display: block; color: var(--muted); }
+.empty strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 4px; }
+
+/* =========================================================================
+   7. ABOUT
+   ========================================================================= */
+.about { display: grid; gap: var(--s4); max-width: 1040px; }
+.about h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; line-height: 1.25; margin-bottom: var(--s2); }
+.about h3 { font-size: 16px; font-weight: 700; }
+.about p, .about li { font-size: 15px; max-width: 72ch; }
+.about .lead { font-size: 18px; line-height: 1.55; }
+.about-intro { display: grid; gap: var(--s2); }
+.problem { border-left: 4px solid var(--navy); padding: var(--s1) 0 var(--s1) var(--s2); }
+:root[data-theme="dark"] .problem { border-left-color: var(--emerald); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .problem { border-left-color: var(--emerald); } }
+.arch svg { width: 100%; height: auto; display: block; }
+.arch .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.arch .box-core { fill: var(--navy); stroke: var(--navy); }
+.arch .t { fill: var(--text); font: 700 14px var(--font-ui); }
+.arch .ts { fill: var(--muted); font: 500 12px var(--font-ui); }
+.arch .t-core { fill: var(--white); font: 700 14px var(--font-ui); }
+.arch .ts-core { fill: #C5D0DE; font: 500 12px var(--font-ui); }
+.arch .arrow { stroke: var(--emerald); stroke-width: 2.5; fill: none; }
+.arch .arrow-head { fill: var(--emerald); }
+.arch-v { display: block; max-width: 340px; margin: 0 auto; }
+.arch-h { display: none; }
+@media (min-width: 760px) { .arch-v { display: none; } .arch-h { display: block; } }
+.status-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+.status-table th, .status-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.status-table th { font-size: 12px; color: var(--muted); background: var(--surface-2); }
+.status-table tr:last-child td { border-bottom: 0; }
+.badge-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.badge-status.demo { color: var(--accent-text); }
+.badge-status.prop { color: var(--muted); }
+.sensor-info { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.sensor-info .card { display: grid; grid-template-rows: auto 1fr auto; gap: var(--s1); }
+.sensor-info .role { font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: var(--s1); }
+.sensor-info .role strong { color: var(--text); }
+.two-lists { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .two-lists { grid-template-columns: 1fr 1fr; } }
+.two-lists ul { margin: 0; padding-left: 20px; display: grid; gap: var(--s1); }
+.team { display: grid; gap: var(--s3); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .team { grid-template-columns: 1.4fr 1fr; } }
+.team ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s1); }
+.team li { padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-weight: 600; }
+.team dl { margin: 0; display: grid; gap: var(--s1); }
+.team dt { font-size: 13px; color: var(--muted); }
+.team dd { margin: 0 0 var(--s1); font-weight: 600; }
+
+/* =========================================================================
+   8. FOOTER + MOTION PREFERENCES
+   ========================================================================= */
+.site-footer { border-top: 1px solid var(--border); padding: var(--s3) 0; font-size: 13px; color: var(--muted); }
+.site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s1); }
+.site-footer strong { color: var(--text); }
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .buzzer.sounding .wave { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ======================================================================
+     HEADER
+     ====================================================================== -->
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B1F3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="#0B1F3A"/></svg>
+      </span>
+      <div>
+        <h1>IoT-Based Comprehensive Disaster Management System</h1>
+        <p class="subtitle">A multi-sensor approach for early hazard detection and warning · IGDTUW, Delhi</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="modeBadge" class="mode-badge" data-mode="sim" role="status" aria-live="polite">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/></svg>
+        <span id="modeBadgeText">Simulation Mode - not live hardware</span>
+      </span>
+      <div class="popover-wrap">
+        <button type="button" class="hbtn" id="helpBtn" aria-expanded="false" aria-controls="helpPop">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+          Shortcuts
+        </button>
+        <div class="popover" id="helpPop" role="dialog" aria-labelledby="helpTitle" hidden>
+          <h2 id="helpTitle">Keyboard shortcuts</h2>
+          <dl>
+            <dt><kbd>D</kbd></dt><dd>Start or stop the demo scenario</dd>
+            <dt><kbd>A</kbd></dt><dd>Acknowledge (silence buzzer)</dd>
+            <dt><kbd>M</kbd></dt><dd>Mute or unmute the buzzer</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this panel</dd>
+          </dl>
+          <p>Shortcuts are ignored while typing in a number field. Developers: run <code>runSelfCheck()</code> in the console to test the alert logic.</p>
+        </div>
+      </div>
+      <button type="button" class="hbtn" id="themeBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+        <span id="themeBtnText">Theme: System</span>
+      </button>
+    </div>
+  </div>
+  <nav class="wrap tabs" role="tablist" aria-label="Sections">
+    <button type="button" class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="true">Dashboard</button>
+    <button type="button" class="tab" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Event Log <span class="count" id="logCount" aria-label="events">0</span></button>
+    <button type="button" class="tab" role="tab" id="tab-about" aria-controls="panel-about" aria-selected="false" tabindex="-1">About Project</button>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+
+<!-- ======================================================================
+     DASHBOARD TAB
+     ====================================================================== -->
+<section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" tabindex="0">
+
+  <!-- 1. Overall status banner -->
+  <div class="banner" id="banner" data-level="NORMAL">
+    <div class="banner-icon" id="bannerIcon" aria-hidden="true"></div>
+    <div class="banner-text">
+      <p class="banner-label">Overall status</p>
+      <p class="banner-level" id="bannerLevel">NORMAL</p>
+      <p class="banner-reason" id="bannerReason">All monitored conditions are within limits</p>
+    </div>
+    <ul class="banner-also" id="bannerAlso" aria-label="Other active alerts"></ul>
+  </div>
+
+  <!-- Demo scenario controls -->
+  <div class="toolbar">
+    <button type="button" class="btn btn-primary" id="demoBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="demoIcon"><path d="M7 4.5v15l12-7.5z"/></svg>
+      <span id="demoBtnText">Run demo scenario</span>
+    </button>
+    <div class="demo-progress" id="demoProgressWrap" hidden>
+      <div class="progress" id="demoProgress" role="progressbar" aria-label="Demo scenario progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="demoBar"></span></div>
+      <span class="demo-phase" id="demoPhase" aria-live="polite"></span>
+    </div>
+    <p class="hint" id="demoHint">About 40 seconds: flood, gas leak, then presence and obstacle. Touching any sensor control stops it.</p>
+  </div>
+
+  <div class="dash-grid">
+    <!-- Main column -->
+    <div class="col">
+      <!-- 2. Sensor control cards -->
+      <section aria-labelledby="sensorsTitle">
+        <div class="section-head">
+          <h2 id="sensorsTitle">Sensor controls</h2>
+          <p class="hint" id="sensorHint">Simulated inputs. The page runs the project's alert logic on these values.</p>
+        </div>
+        <div class="sensor-grid">
+
+          <!-- Ultrasonic -->
+          <article class="card sensor" aria-labelledby="distName">
+            <div class="sensor-head">
+              <span class="sensor-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><circle cx="8" cy="7" r="1.2"/><circle cx="16" cy="7" r="1.2"/><path d="M8 13c2 1.5 6 1.5 8 0M6 17c3 2.5 9 2.5 12 0M4 21c4 2.5 12 2.5 16 0"/></svg>
+              </span>
+              <div>
+                <h3 id="distName">Ultrasonic sensor</h3>
+                <span class="tag tag-demo">Demonstrated</span>
+              </div>
+            </div>
+            <div class="sensor-value">
+              <output id="distValue" for="distSlider">150 cm</output>
+              <span id="distChip"></span>
+            </div>
+            <div class="sensor-control">
+              <label for="distSlider">Distance from sensor to water surface (cm)</label>
+              <input type="range" id="distSlider" min="2" max="200" step="1" value="150">
+            </div>
+            <p class="sensor-foot">Water height: <strong id="distFoot">50 cm</strong> (sensor 200 cm above tank bottom)</p>
+          </article>
+
+          <!-- Gas -->
+          <article class="card sensor" aria-labelledby="gasName">
+            <div class="sensor-head">
+              <span class="sensor-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M5 16h6"/></svg>
+              </span>
+              <div>
+                <h3 id="gasName">Gas sensor</h3>
+                <span class="tag tag-proposed">Proposed</span>
+              </div>
+            </div>
+            <div class="sensor-value">
+              <output id="gasValue" for="gasSlider">10 %</output>
+              <span id="gasChip"></span>
+            </div>
+            <div class="sensor-control">
+              <label for="gasSlider">Gas level (%)</label>
+              <input type="range" id="gasSlider" min="0" max="100" step="1" value="10">
+            </div>
+            <p class="sensor-foot">Needs warm-up in real hardware</p>
+          </article>
+
+          <!-- PIR -->
+          <article class="card sensor" aria-labelledby="pirName">
+            <div class="sensor-head">
+              <span class="sensor-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 3 3v3M7 12l3-4 4 1 3 3M11 15l1-6"/></svg>
+              </span>
+              <div>
+                <h3 id="pirName">PIR sensor</h3>
+                <span class="tag tag-demo">Demonstrated</span>
+              </div>
+            </div>
+            <div class="sensor-value">
+              <output id="pirValue" class="state-text">No motion</output>
+              <span id="pirChip"></span>
+            </div>
+            <div class="sensor-control">
+              <button type="button" class="switch" role="switch" id="pirSwitch" aria-checked="false">
+                <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                <span class="switch-label">Motion detected</span>
+                <span class="switch-state" aria-hidden="true">OFF</span>
+              </button>
+            </div>
+            <p class="sensor-foot">Senses movement of warm bodies (human presence)</p>
+          </article>
+
+          <!-- IR -->
+          <article class="card sensor" aria-labelledby="irName">
+            <div class="sensor-head">
+              <span class="sensor-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="8" width="6" height="8" rx="1"/><path d="M8 10h8M8 14h8" stroke-dasharray="2 2"/><rect x="17" y="5" width="5" height="14" rx="1"/></svg>
+              </span>
+              <div>
+                <h3 id="irName">IR obstacle sensor</h3>
+                <span class="tag tag-demo">Demonstrated</span>
+              </div>
+            </div>
+            <div class="sensor-value">
+              <output id="irValue" class="state-text">Path clear</output>
+              <span id="irChip"></span>
+            </div>
+            <div class="sensor-control">
+              <button type="button" class="switch" role="switch" id="irSwitch" aria-checked="false">
+                <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                <span class="switch-label">Obstacle detected</span>
+                <span class="switch-state" aria-hidden="true">OFF</span>
+              </button>
+            </div>
+            <p class="sensor-foot">Short-range reflection of infrared light</p>
+          </article>
+
+          <!-- Touch -->
+          <article class="card sensor" aria-labelledby="touchName">
+            <div class="sensor-head">
+              <span class="sensor-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a2 2 0 1 1 4 0v5"/><path d="M13 10a2 2 0 1 1 4 0v1a2 2 0 1 1 3 1.7V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.7-2.3L5 15.5a1.8 1.8 0 0 1 2.7-2.3L9 14.5"/></svg>
+              </span>
+              <div>
+                <h3 id="touchName">Touch sensor</h3>
+                <span class="tag tag-proposed">Proposed</span>
+              </div>
+            </div>
+            <div class="sensor-value">
+              <output id="touchValue" class="state-text">Idle</output>
+              <span id="touchChip"></span>
+            </div>
+            <div class="sensor-control">
+              <button type="button" class="btn" id="touchBtn" aria-describedby="touchFoot">Touch (acknowledge)</button>
+            </div>
+            <p class="sensor-foot" id="touchFoot">Silences the buzzer until the danger clears. LEDs stay on.</p>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- 5. Live chart -->
+      <section class="card" aria-labelledby="chartTitle">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title" id="chartTitle">Live readings</h2>
+            <p class="hint">Last 60 samples, one per second</p>
+          </div>
+          <button type="button" class="btn" id="chartPauseBtn" aria-pressed="false">Pause recording</button>
+        </div>
+        <ul class="chart-legend" aria-label="Chart legend">
+          <li><span class="swatch" style="border-color: var(--chart-dist)"></span>Distance (cm, left axis)</li>
+          <li><span class="swatch" style="border-color: var(--chart-gas)"></span>Gas level (%, right axis)</li>
+          <li><span class="swatch dashed" style="border-color: var(--amber)"></span>Caution distance</li>
+          <li><span class="swatch dashed" style="border-color: var(--red)"></span>Danger distance</li>
+          <li><span class="swatch dashed" style="border-color: var(--muted)"></span>Gas threshold</li>
+        </ul>
+        <div class="chart-box">
+          <canvas id="chart" role="img" aria-label="Line chart of distance and gas level over the last 60 seconds" aria-describedby="chartSummary"></canvas>
+        </div>
+        <p id="chartSummary" class="sr-only"></p>
+      </section>
+    </div>
+
+    <!-- Side column -->
+    <div class="col">
+      <!-- 3. Alert indicators -->
+      <section class="card" aria-labelledby="alertsTitle">
+        <div class="card-head"><h2 class="card-title" id="alertsTitle">Alert indicators</h2></div>
+        <div class="indicators">
+          <ul class="leds" aria-label="Indicator LEDs">
+            <li class="led-item" id="ledGreenItem"><span class="led led-green" id="ledGreen"></span><span class="led-name">Green</span><span class="led-state" id="ledGreenState">ON</span></li>
+            <li class="led-item" id="ledYellowItem"><span class="led led-yellow" id="ledYellow"></span><span class="led-name">Yellow</span><span class="led-state" id="ledYellowState">off</span></li>
+            <li class="led-item" id="ledRedItem"><span class="led led-red" id="ledRed"></span><span class="led-name">Red</span><span class="led-state" id="ledRedState">off</span></li>
+          </ul>
+          <div class="buzzer" id="buzzer">
+            <span class="buzzer-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" fill-opacity="0.15"/><path class="wave wave-1" d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path class="wave wave-2" d="M18.5 7a7 7 0 0 1 0 10"/></svg>
+            </span>
+            <div class="buzzer-text">
+              <strong id="buzzerTitle">Buzzer: off</strong>
+              <span id="buzzerSub">No danger condition</span>
+            </div>
+          </div>
+        </div>
+        <div class="sound-row">
+          <button type="button" class="btn" id="soundBtn" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/></svg>
+            Enable sound
+          </button>
+          <span class="hint" id="soundHint" hidden>Your browser blocked audio until you interact with the page.</span>
+        </div>
+      </section>
+
+      <!-- 4. Water tank -->
+      <section class="card" aria-labelledby="tankTitle">
+        <div class="card-head">
+          <h2 class="card-title" id="tankTitle">Water tank</h2>
+          <span id="tankChip"></span>
+        </div>
+        <svg class="tank-svg" id="tankSvg" viewBox="0 0 260 250" role="img" aria-labelledby="tankDesc">
+          <desc id="tankDesc">Water tank diagram</desc>
+          <!-- Ultrasonic sensor mounted 200 cm above tank bottom (y = 30 is 200 cm, y = 230 is 0 cm) -->
+          <rect class="sensor-box" x="88" y="8" width="44" height="16" rx="3"/>
+          <circle cx="100" cy="16" r="4" fill="#F2F4F6"/><circle cx="120" cy="16" r="4" fill="#F2F4F6"/>
+          <rect class="tank-bg" x="50" y="30" width="120" height="200"/>
+          <rect class="water" id="tankWater" x="50" y="30" width="120" height="200"/>
+          <line class="beam" id="tankBeam" x1="110" y1="24" x2="110" y2="180"/>
+          <line class="line-caution" id="tankCautionLine" x1="44" x2="176" y1="90" y2="90"/>
+          <line class="line-danger" id="tankDangerLine" x1="44" x2="176" y1="60" y2="60"/>
+          <text class="lbl" id="tankCautionLbl" x="180" y="94">Caution</text>
+          <text class="lbl" id="tankDangerLbl" x="180" y="64">Danger</text>
+          <path class="tank-wall" d="M50 30 V230 H170 V30"/>
+          <text class="lbl-muted" x="44" y="234" text-anchor="end">0</text>
+          <text class="lbl-muted" x="44" y="34" text-anchor="end">200</text>
+          <text class="lbl-muted" x="4" y="134">cm</text>
+          <text class="lbl-muted" x="138" y="19">sensor</text>
+        </svg>
+        <dl class="tank-readout">
+          <div><dt>Water height</dt><dd id="tankHeight">50 cm</dd></div>
+          <div><dt>Distance to surface</dt><dd id="tankDist">150 cm</dd></div>
+        </dl>
+      </section>
+
+      <!-- 6. Settings -->
+      <section class="card" aria-labelledby="settingsTitle">
+        <div class="card-head"><h2 class="card-title" id="settingsTitle">Settings</h2></div>
+        <form class="settings-form" id="settingsForm" novalidate>
+          <div class="field">
+            <label for="setCaution">Caution distance (cm)</label>
+            <input type="number" id="setCaution" inputmode="numeric" min="3" max="200" step="1" aria-describedby="setCautionHelp settingsError">
+            <span class="help" id="setCautionHelp">Water at or closer than this gives CAUTION</span>
+          </div>
+          <div class="field">
+            <label for="setDanger">Danger distance (cm)</label>
+            <input type="number" id="setDanger" inputmode="numeric" min="2" max="199" step="1" aria-describedby="setDangerHelp settingsError">
+            <span class="help" id="setDangerHelp">Must be smaller than the caution distance</span>
+          </div>
+          <div class="field">
+            <label for="setGas">Gas warning threshold (%)</label>
+            <input type="number" id="setGas" inputmode="numeric" min="1" max="100" step="1" aria-describedby="setGasHelp settingsError">
+            <span class="help" id="setGasHelp">Gas level at or above this gives DANGER</span>
+          </div>
+          <label class="check-row"><input type="checkbox" id="setBuzzer"> Buzzer enabled <kbd aria-hidden="true">M</kbd></label>
+          <p class="form-error" id="settingsError" role="alert"></p>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Apply settings</button>
+            <button type="button" class="btn" id="resetBtn">Reset to defaults</button>
+          </div>
+          <p class="form-ok" id="settingsOk" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <!-- Experimental: Web Serial input (off by default) -->
+      <section class="card experimental" aria-labelledby="serialTitle">
+        <div class="card-head">
+          <h2 class="card-title" id="serialTitle">USB serial input</h2>
+          <span class="tag tag-exp">Experimental</span>
+        </div>
+        <p>Reads one line per second at 9600 baud from a board on a USB cable, in the form <code>GAS:35,PIR:1,IR:0,TOUCH:0,DIST:42</code>, and drives this dashboard with it.</p>
+        <label class="check-row"><input type="checkbox" id="serialEnable"> Enable experimental USB serial</label>
+        <div class="serial-controls" id="serialControls" hidden>
+          <button type="button" class="btn" id="serialBtn">Connect to board (USB serial)</button>
+          <p class="serial-msg" id="serialMsg" aria-live="polite"></p>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     EVENT LOG TAB
+     ====================================================================== -->
+<section id="panel-log" role="tabpanel" aria-labelledby="tab-log" tabindex="0" hidden>
+  <div class="card">
+    <div class="log-head">
+      <div>
+        <h2>Event log</h2>
+        <p class="hint" id="logSummary">Each state change is recorded once. Newest first.</p>
+      </div>
+      <div class="log-tools">
+        <div class="field">
+          <label for="logFilter">Source</label>
+          <select id="logFilter">
+            <option value="all">All sources</option>
+            <option value="Flood">Flood</option>
+            <option value="Gas">Gas</option>
+            <option value="PIR">PIR</option>
+            <option value="IR">IR</option>
+            <option value="Touch">Touch</option>
+            <option value="System">System</option>
+          </select>
+        </div>
+        <button type="button" class="btn" id="clearLogBtn">Clear log</button>
+        <button type="button" class="btn btn-primary" id="csvBtn">Download CSV</button>
+      </div>
+    </div>
+    <div class="table-wrap" id="logTableWrap">
+      <table class="log-table">
+        <caption class="sr-only">Event log, newest first</caption>
+        <thead><tr><th scope="col">Time</th><th scope="col">Source</th><th scope="col">State</th><th scope="col">Value / details</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="logEmpty" hidden>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      <strong id="logEmptyTitle">No events yet</strong>
+      <span id="logEmptyText">Change a sensor value or run the demo scenario. Every state change appears here once.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     ABOUT TAB
+     ====================================================================== -->
+<section id="panel-about" role="tabpanel" aria-labelledby="tab-about" tabindex="0" hidden>
+  <div class="about">
+
+    <div class="about-intro">
+      <h2>About the project</h2>
+      <p class="lead">Floods, gas leaks and unsafe movement in restricted areas often give early, measurable signs before they become emergencies. This project uses several low-cost sensors connected to an 8051 microcontroller to watch for those signs and raise a local warning with LEDs and a buzzer.</p>
+      <div class="problem">
+        <h3>Problem statement</h3>
+        <p>Single-purpose alarms watch for one hazard at a time and many low-resource settings have no early warning at all. The aim is a single, affordable multi-sensor unit that checks water level, gas concentration, human presence and obstacles against programmed thresholds and gives a clear, graded local alert (normal, caution, danger).</p>
+      </div>
+      <p>This web page is a simulation of that alert logic for demonstration and teaching. It does not read live hardware unless the experimental USB serial input is used.</p>
+    </div>
+
+    <section aria-labelledby="archTitle" class="arch">
+      <h2 id="archTitle">System architecture</h2>
+      <!-- Horizontal diagram (wide screens) -->
+      <svg class="arch-h" viewBox="0 0 980 150" role="img" aria-labelledby="archDescH">
+        <title id="archDescH">Environmental conditions are read by multiple sensors, passed to the 8051 microcontroller, evaluated against programmed conditions, and drive the LED and buzzer alert system.</title>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow-head" d="M0 0 10 5 0 10z"/></marker></defs>
+        <rect class="box" x="2" y="25" width="164" height="100" rx="12"/>
+        <text class="t" x="84" y="66" text-anchor="middle">Environmental</text>
+        <text class="t" x="84" y="84" text-anchor="middle">Conditions</text>
+        <text class="ts" x="84" y="104" text-anchor="middle">water, gas, motion</text>
+        <path class="arrow" d="M168 75h34" marker-end="url(#ah)"/>
+        <rect class="box" x="204" y="25" width="164" height="100" rx="12"/>
+        <text class="t" x="286" y="66" text-anchor="middle">Multiple</text>
+        <text class="t" x="286" y="84" text-anchor="middle">Sensors</text>
+        <text class="ts" x="286" y="104" text-anchor="middle">Gas, US, PIR, IR, Touch</text>
+        <path class="arrow" d="M370 75h34" marker-end="url(#ah)"/>
+        <rect class="box box-core" x="406" y="25" width="164" height="100" rx="12"/>
+        <text class="t-core" x="488" y="66" text-anchor="middle">8051</text>
+        <text class="t-core" x="488" y="84" text-anchor="middle">Microcontroller</text>
+        <text class="ts-core" x="488" y="104" text-anchor="middle">reads sensor inputs</text>
+        <path class="arrow" d="M572 75h34" marker-end="url(#ah)"/>
+        <rect class="box" x="608" y="25" width="164" height="100" rx="12"/>
+        <text class="t" x="690" y="66" text-anchor="middle">Programmed</text>
+        <text class="t" x="690" y="84" text-anchor="middle">Condition Evaluation</text>
+        <text class="ts" x="690" y="104" text-anchor="middle">threshold checks</text>
+        <path class="arrow" d="M774 75h34" marker-end="url(#ah)"/>
+        <rect class="box" x="810" y="25" width="166" height="100" rx="12"/>
+        <text class="t" x="893" y="66" text-anchor="middle">LED and Buzzer</text>
+        <text class="t" x="893" y="84" text-anchor="middle">Alert System</text>
+        <text class="ts" x="893" y="104" text-anchor="middle">local warning</text>
+      </svg>
+      <!-- Vertical diagram (narrow screens) -->
+      <svg class="arch-v" viewBox="0 0 320 560" role="img" aria-labelledby="archDescV">
+        <title id="archDescV">Environmental conditions, then multiple sensors, then 8051 microcontroller, then programmed condition evaluation, then LED and buzzer alert system.</title>
+        <defs><marker id="av" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow-head" d="M0 0 10 5 0 10z"/></marker></defs>
+        <rect class="box" x="30" y="2" width="260" height="80" rx="12"/>
+        <text class="t" x="160" y="38" text-anchor="middle">Environmental Conditions</text>
+        <text class="ts" x="160" y="58" text-anchor="middle">water, gas, motion, obstacles</text>
+        <path class="arrow" d="M160 84v30" marker-end="url(#av)"/>
+        <rect class="box" x="30" y="118" width="260" height="80" rx="12"/>
+        <text class="t" x="160" y="154" text-anchor="middle">Multiple Sensors</text>
+        <text class="ts" x="160" y="174" text-anchor="middle">Gas, Ultrasonic, PIR, IR, Touch</text>
+        <path class="arrow" d="M160 200v30" marker-end="url(#av)"/>
+        <rect class="box box-core" x="30" y="234" width="260" height="80" rx="12"/>
+        <text class="t-core" x="160" y="270" text-anchor="middle">8051 Microcontroller</text>
+        <text class="ts-core" x="160" y="290" text-anchor="middle">reads sensor inputs</text>
+        <path class="arrow" d="M160 316v30" marker-end="url(#av)"/>
+        <rect class="box" x="30" y="350" width="260" height="80" rx="12"/>
+        <text class="t" x="160" y="386" text-anchor="middle">Programmed Condition Evaluation</text>
+        <text class="ts" x="160" y="406" text-anchor="middle">threshold checks</text>
+        <path class="arrow" d="M160 432v30" marker-end="url(#av)"/>
+        <rect class="box" x="30" y="466" width="260" height="80" rx="12"/>
+        <text class="t" x="160" y="502" text-anchor="middle">LED and Buzzer Alert System</text>
+        <text class="ts" x="160" y="522" text-anchor="middle">local warning</text>
+      </svg>
+    </section>
+
+    <section aria-labelledby="statusTitle">
+      <h2 id="statusTitle">Demonstrated vs proposed</h2>
+      <p class="hint" style="margin-bottom: 16px">"Demonstrated" means shown working on the hardware prototype. "Proposed" means part of the design but not yet demonstrated.</p>
+      <div class="table-wrap">
+        <table class="status-table">
+          <caption class="sr-only">Status of each component and application</caption>
+          <thead><tr><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Status</th></tr></thead>
+          <tbody id="statusBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="sensorsInfoTitle">
+      <h2 id="sensorsInfoTitle">Sensors</h2>
+      <div class="sensor-info">
+        <article class="card">
+          <h3>Gas sensor</h3>
+          <p>A heated sensing element changes its resistance when combustible or harmful gases are present. The change is read as a gas level and compared with a threshold.</p>
+          <p class="role"><strong>Role:</strong> gas-leak detection (proposed).</p>
+        </article>
+        <article class="card">
+          <h3>Ultrasonic sensor</h3>
+          <p>Sends a short ultrasonic pulse and times its echo. Distance = speed of sound × echo time ÷ 2.</p>
+          <p class="role"><strong>Role:</strong> distance to the water surface for flood monitoring.</p>
+        </article>
+        <article class="card">
+          <h3>PIR sensor</h3>
+          <p>A pyroelectric element senses changes in infrared radiation from warm bodies. It reacts to movement, not to a person standing still.</p>
+          <p class="role"><strong>Role:</strong> human presence detection.</p>
+        </article>
+        <article class="card">
+          <h3>IR obstacle sensor</h3>
+          <p>An infrared LED shines forward and a photodiode looks for light reflected back. A strong reflection means an object is close.</p>
+          <p class="role"><strong>Role:</strong> obstacle at a blocked point.</p>
+        </article>
+        <article class="card">
+          <h3>Touch sensor</h3>
+          <p>A touch pad detects the change caused by a finger contact and gives a digital output.</p>
+          <p class="role"><strong>Role:</strong> manual acknowledge to silence the buzzer (proposed).</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="two-lists" aria-label="Limitations and future scope">
+      <div>
+        <h2>Limitations</h2>
+        <ul>
+          <li>This page is a simulation; values come from on-screen controls.</li>
+          <li>Thresholds are set by hand and the sensors are not calibrated.</li>
+          <li>Gas sensors need a warm-up period and can respond to more than one gas.</li>
+          <li>Ultrasonic readings can be disturbed by waves, foam and temperature changes.</li>
+          <li>The PIR sensor detects motion only, so a still person may be missed.</li>
+          <li>The IR obstacle sensor has a short range and depends on surface colour and ambient light.</li>
+          <li>Alerts are local only: LEDs and a buzzer at the device.</li>
+          <li>The 8051 has limited memory and processing capacity.</li>
+          <li>The system has not been field-tested and is not a certified warning system.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Future scope</h2>
+        <ul>
+          <li>Wireless communication modules to send readings from the device.</li>
+          <li>Cloud storage and a remote dashboard for long-term records.</li>
+          <li>Mobile app and SMS alerts to people away from the device.</li>
+          <li>More sensors such as rain, temperature, smoke and vibration.</li>
+          <li>Proper calibration of every sensor against reference instruments.</li>
+          <li>Battery or solar backup for operation during power cuts.</li>
+          <li>Analysis of recorded data to study trends before hazards develop.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="teamTitle">
+      <h2 id="teamTitle">Team</h2>
+      <div class="team">
+        <div>
+          <h3 style="margin-bottom: 8px">Group members</h3>
+          <ul>
+            <li>Meenu</li><li>Kajal</li><li>Rana</li><li>Anushka</li><li>Neetu</li>
+          </ul>
+        </div>
+        <dl>
+          <dt>Faculty guide</dt><dd>Tamal Misra</dd>
+          <dt>Institution</dt><dd>Indira Gandhi Delhi Technical University for Women (IGDTUW), Delhi</dd>
+          <dt>Department · Year</dt><dd>Department of Mathematics and Computing · 2026–2027</dd>
+        </dl>
+      </div>
+    </section>
+  </div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Educational prototype. Not a certified warning system.</strong></p>
+    <p>B.Tech project · IGDTUW · Department of Mathematics and Computing · 2026–2027</p>
+  </div>
+</footer>
+
+<!-- Screen reader announcement for overall status changes -->
+<div id="srAlert" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+<!--BOOT-->
+<script>
+'use strict';
+(function () {
+
+/* =========================================================================
+   1. CONSTANTS AND STATE
+   All state lives in memory. Nothing is stored in localStorage/sessionStorage.
+   ========================================================================= */
+const SEVERITY = { NORMAL: 0, CAUTION: 1, DANGER: 2 };
+const SENSOR_HEIGHT_CM = 200;          // ultrasonic sensor height above tank bottom
+const DIST_MIN = 2, DIST_MAX = 200;    // slider range (cm)
+const HISTORY_LEN = 60;                // chart samples
+const LOG_MAX = 1000;                  // cap the log to avoid unbounded memory use
+const DEFAULT_SETTINGS = Object.freeze({ cautionDist: 60, dangerDist: 30, gasThreshold: 50, buzzerEnabled: true });
+
+const state = {
+  sensors: { gas: 10, dist: 150, pir: false, ir: false },
+  settings: Object.assign({}, DEFAULT_SETTINGS),
+  conditions: [],
+  overall: 'NORMAL',
+  prevSignature: {},       // condition key -> "LEVEL|message", for logging changes once
+  prevSource: {},          // condition key -> last log source
+  ackedKeys: new Set(),    // danger conditions silenced by Touch/Acknowledge
+  lastTouch: null,
+  log: [],
+  logFilter: 'all',
+  history: [],
+  chartPaused: false,
+  mode: 'sim',             // 'sim' | 'serial'
+  themePref: 'system',     // 'system' | 'light' | 'dark'
+  demo: { running: false, timer: null, startedAt: 0 },
+  audio: { ctx: null, beepTimer: null, blocked: false },
+  serial: { port: null, reader: null, pipeDone: null, lastTouch: 0, badLines: 0 },
+  timers: { sample: null, debounce: null }
+};
+
+const $ = (id) => document.getElementById(id);
+
+/* Small inline icons used in chips and banners (never emoji) */
+const ICON = {
+  NORMAL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>',
+  CAUTION: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>',
+  DANGER: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>',
+  INFO: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>'
+};
+
+/* =========================================================================
+   2. ALERT EVALUATION (pure functions — no DOM, no side effects)
+   ========================================================================= */
+
+/**
+ * Evaluate every hazard condition.
+ * @param {{gas:number, dist:number, pir:boolean, ir:boolean}} s  sensor values
+ * @param {{cautionDist:number, dangerDist:number, gasThreshold:number}} cfg settings
+ * @returns {Array<{key:string, source:string, level:'NORMAL'|'CAUTION'|'DANGER', message:string, detail:string, buzzer:boolean}>}
+ */
+function evaluateAlerts(s, cfg) {
+  const list = [];
+
+  // Flood: distance > caution -> NORMAL; danger < distance <= caution -> CAUTION; distance <= danger -> DANGER
+  const distDetail = 'water surface ' + s.dist + ' cm from sensor';
+  if (s.dist > cfg.cautionDist) {
+    list.push({ key: 'flood', source: 'Flood', level: 'NORMAL', message: 'Water level normal', detail: distDetail, buzzer: false });
+  } else if (s.dist > cfg.dangerDist) {
+    list.push({ key: 'flood', source: 'Flood', level: 'CAUTION', message: 'Flood caution', detail: distDetail, buzzer: false });
+  } else {
+    list.push({ key: 'flood', source: 'Flood', level: 'DANGER', message: 'Flood danger', detail: distDetail, buzzer: true });
+  }
+
+  // Gas: gas >= threshold -> DANGER "Gas leak warning"
+  const gasDetail = 'gas level ' + s.gas + ' % (threshold ' + cfg.gasThreshold + ' %)';
+  if (s.gas >= cfg.gasThreshold) {
+    list.push({ key: 'gas', source: 'Gas', level: 'DANGER', message: 'Gas leak warning', detail: gasDetail, buzzer: true });
+  } else {
+    list.push({ key: 'gas', source: 'Gas', level: 'NORMAL', message: 'Gas level normal', detail: gasDetail, buzzer: false });
+  }
+
+  // Presence / obstacle
+  if (s.pir && s.ir) {
+    list.push({ key: 'presence', source: 'PIR+IR', level: 'DANGER', message: 'Person or object at a blocked point', detail: 'PIR motion and IR obstacle both active', buzzer: true });
+  } else if (s.pir) {
+    list.push({ key: 'presence', source: 'PIR', level: 'CAUTION', message: 'Presence detected', detail: 'PIR motion active', buzzer: false });
+  } else if (s.ir) {
+    list.push({ key: 'presence', source: 'IR', level: 'CAUTION', message: 'Obstacle detected', detail: 'IR obstacle active', buzzer: false });
+  } else {
+    list.push({ key: 'presence', source: 'PIR+IR', level: 'NORMAL', message: 'No presence or obstacle', detail: 'PIR and IR inactive', buzzer: false });
+  }
+  return list;
+}
+
+/** Highest severity among the conditions. */
+function overallLevel(conds) {
+  return conds.reduce((max, c) => (SEVERITY[c.level] > SEVERITY[max] ? c.level : max), 'NORMAL');
+}
+
+/** The condition that explains the overall level (first in order Flood, Gas, Presence). */
+function primaryCondition(conds) {
+  const lvl = overallLevel(conds);
+  return lvl === 'NORMAL' ? null : conds.find((c) => c.level === lvl);
+}
+
+/** Whether the buzzer must sound: any un-acknowledged DANGER and buzzer enabled. */
+function buzzerShouldSound(conds, cfg, ackedKeys) {
+  return !!cfg.buzzerEnabled && conds.some((c) => c.level === 'DANGER' && c.buzzer && !ackedKeys.has(c.key));
+}
+
+/** Validate settings. Returns an error string, or '' when valid. */
+function validateSettings(cfg) {
+  const isInt = (v) => typeof v === 'number' && Number.isFinite(v) && Math.round(v) === v;
+  if (!isInt(cfg.cautionDist) || cfg.cautionDist < 3 || cfg.cautionDist > 200) return 'Caution distance must be a whole number from 3 to 200 cm.';
+  if (!isInt(cfg.dangerDist) || cfg.dangerDist < 2 || cfg.dangerDist > 199) return 'Danger distance must be a whole number from 2 to 199 cm.';
+  if (cfg.dangerDist >= cfg.cautionDist) return 'Danger distance must be smaller than the caution distance.';
+  if (!isInt(cfg.gasThreshold) || cfg.gasThreshold < 1 || cfg.gasThreshold > 100) return 'Gas threshold must be a whole number from 1 to 100 %.';
+  return '';
+}
+
+/** Parse one serial line "GAS:35,PIR:1,IR:0,TOUCH:0,DIST:42". Returns values or null. */
+function parseSerialLine(line) {
+  const out = {};
+  const parts = String(line).trim().split(',');
+  for (const p of parts) {
+    const m = /^\s*([A-Z]+)\s*:\s*(-?\d+(?:\.\d+)?)\s*$/i.exec(p);
+    if (!m) return null;
+    out[m[1].toUpperCase()] = Number(m[2]);
+  }
+  const need = ['GAS', 'PIR', 'IR', 'TOUCH', 'DIST'];
+  if (!need.every((k) => k in out)) return null;
+  return {
+    gas: clamp(Math.round(out.GAS), 0, 100),
+    dist: clamp(Math.round(out.DIST), DIST_MIN, DIST_MAX),
+    pir: out.PIR === 1,
+    ir: out.IR === 1,
+    touch: out.TOUCH === 1
+  };
+}
+
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+/* =========================================================================
+   3. CORE UPDATE CYCLE
+   ========================================================================= */
+function update() {
+  const conds = evaluateAlerts(state.sensors, state.settings);
+  state.conditions = conds;
+
+  // Acknowledgement lasts only until that danger condition clears
+  for (const key of Array.from(state.ackedKeys)) {
+    if (!conds.some((c) => c.key === key && c.level === 'DANGER')) state.ackedKeys.delete(key);
+  }
+
+  logStateChanges(conds);
+
+  const overall = overallLevel(conds);
+  if (overall !== state.overall) {
+    const p = primaryCondition(conds);
+    $('srAlert').textContent = 'Status ' + overall + (p ? ': ' + p.message + ', ' + p.detail : ': all conditions normal');
+  }
+  state.overall = overall;
+
+  render();
+  updateBuzzer();
+}
+
+/** Debounced update used while dragging sliders. */
+function scheduleUpdate() {
+  clearTimeout(state.timers.debounce);
+  state.timers.debounce = setTimeout(update, 120);
+}
+
+/* =========================================================================
+   4. EVENT LOG
+   ========================================================================= */
+function addLog(source, level, details) {
+  state.log.unshift({ time: new Date(), source: source, state: level, details: details });
+  if (state.log.length > LOG_MAX) state.log.length = LOG_MAX;
+  renderLog();
+}
+
+/** Write a log entry only when a condition's level or reason changes. */
+function logStateChanges(conds) {
+  for (const c of conds) {
+    const sig = c.level + '|' + c.message;
+    if (state.prevSignature[c.key] === sig) continue;
+    const firstRun = !(c.key in state.prevSignature);
+    state.prevSignature[c.key] = sig;
+    // On the first evaluation only record non-normal conditions
+    if (firstRun && c.level === 'NORMAL') { state.prevSource[c.key] = c.source; continue; }
+    // A presence condition that clears is logged under the source that raised it
+    const source = (c.key === 'presence' && c.level === 'NORMAL') ? (state.prevSource[c.key] || 'PIR+IR') : c.source;
+    state.prevSource[c.key] = c.source;
+    addLog(source, c.level, c.message + ': ' + c.detail);
+  }
+}
+
+function formatTime(d) {
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':');
+}
+
+function chipHTML(level, text) {
+  return '<span class="chip chip-' + level + '">' + ICON[level] + (text || level) + '</span>';
+}
+
+function sourceMatches(source, filter) {
+  return filter === 'all' || source.split('+').indexOf(filter) !== -1;
+}
+
+function renderLog() {
+  const rows = state.log.filter((e) => sourceMatches(e.source, state.logFilter));
+  const body = $('logBody');
+  const frag = document.createDocumentFragment();
+  for (const e of rows) {
+    const tr = document.createElement('tr');
+    const tdTime = document.createElement('td'); tdTime.className = 'time'; tdTime.textContent = formatTime(e.time);
+    const tdSrc = document.createElement('td'); tdSrc.className = 'src'; tdSrc.textContent = e.source;
+    const tdState = document.createElement('td'); tdState.innerHTML = chipHTML(e.state);
+    const tdDet = document.createElement('td'); tdDet.textContent = e.details;
+    tr.append(tdTime, tdSrc, tdState, tdDet);
+    frag.appendChild(tr);
+  }
+  body.replaceChildren(frag);
+
+  const empty = rows.length === 0;
+  $('logTableWrap').hidden = empty;
+  $('logEmpty').hidden = !empty;
+  if (empty) {
+    const filtered = state.log.length > 0;
+    $('logEmptyTitle').textContent = filtered ? 'No ' + state.logFilter + ' events' : 'No events yet';
+    $('logEmptyText').textContent = filtered
+      ? 'Choose "All sources" to see the other ' + state.log.length + ' event' + (state.log.length === 1 ? '' : 's') + '.'
+      : 'Change a sensor value or run the demo scenario. Every state change appears here once.';
+  }
+  $('logCount').textContent = String(state.log.length);
+  $('csvBtn').disabled = state.log.length === 0;
+  $('clearLogBtn').disabled = state.log.length === 0;
+  $('logSummary').textContent = state.log.length
+    ? 'Showing ' + rows.length + ' of ' + state.log.length + ' events. Newest first.'
+    : 'Each state change is recorded once. Newest first.';
+}
+
+function csvEscape(v) {
+  const s = String(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function downloadCSV() {
+  if (!state.log.length) return;
+  const lines = ['date,time,source,state,details'];
+  for (const e of state.log.filter((x) => sourceMatches(x.source, state.logFilter))) {
+    const d = e.time;
+    const date = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    lines.push([date, formatTime(d), e.source, e.state, e.details].map(csvEscape).join(','));
+  }
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  a.href = url;
+  a.download = 'disaster-sim-log-' + formatTime(now).replace(/:/g, '') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* =========================================================================
+   5. RENDERING
+   ========================================================================= */
+const LEVEL_TEXT = { NORMAL: 'NORMAL', CAUTION: 'CAUTION', DANGER: 'DANGER' };
+
+function render() {
+  const conds = state.conditions;
+  const byKey = {};
+  conds.forEach((c) => { byKey[c.key] = c; });
+  const s = state.sensors;
+  const overall = state.overall;
+
+  // Banner
+  const banner = $('banner');
+  banner.dataset.level = overall;
+  $('bannerIcon').innerHTML = ICON[overall];
+  $('bannerLevel').textContent = LEVEL_TEXT[overall];
+  const primary = primaryCondition(conds);
+  $('bannerReason').textContent = primary ? primary.message + ': ' + primary.detail : 'All monitored conditions are within limits';
+  const others = conds.filter((c) => c.level !== 'NORMAL' && c !== primary)
+    .sort((a, b) => SEVERITY[b.level] - SEVERITY[a.level]);
+  $('bannerAlso').innerHTML = others.map((c) => '<li>' + ICON[c.level] + '<span>Also ' + c.level.toLowerCase() + ': ' + c.message + '</span></li>').join('');
+
+  // Sensor cards
+  $('distValue').textContent = s.dist + ' cm';
+  $('distFoot').textContent = (SENSOR_HEIGHT_CM - s.dist) + ' cm';
+  $('distChip').innerHTML = chipHTML(byKey.flood.level);
+  $('gasValue').textContent = s.gas + ' %';
+  $('gasChip').innerHTML = chipHTML(byKey.gas.level);
+  $('pirValue').textContent = s.pir ? 'Motion detected' : 'No motion';
+  $('irValue').textContent = s.ir ? 'Obstacle detected' : 'Path clear';
+  $('pirChip').innerHTML = s.pir ? chipHTML(byKey.presence.level) : '';
+  $('irChip').innerHTML = s.ir ? chipHTML(byKey.presence.level) : '';
+  setSwitch($('pirSwitch'), s.pir);
+  setSwitch($('irSwitch'), s.ir);
+  $('distSlider').setAttribute('aria-valuetext', s.dist + ' centimetres, ' + byKey.flood.level.toLowerCase());
+  $('gasSlider').setAttribute('aria-valuetext', s.gas + ' percent, ' + byKey.gas.level.toLowerCase());
+  $('touchValue').textContent = state.lastTouch ? 'Touched ' + formatTime(state.lastTouch) : 'Idle';
+
+  // LEDs (only the LED for the overall level is lit; text labels say which)
+  const leds = [['Green', 'NORMAL'], ['Yellow', 'CAUTION'], ['Red', 'DANGER']];
+  for (const pair of leds) {
+    const on = overall === pair[1];
+    $('led' + pair[0]).classList.toggle('on', on);
+    $('led' + pair[0] + 'Item').classList.toggle('on', on);
+    $('led' + pair[0] + 'State').textContent = on ? 'ON' : 'off';
+  }
+
+  // Tank
+  renderTank(byKey.flood.level);
+
+  drawChart();
+}
+
+function setSwitch(btn, on) {
+  btn.setAttribute('aria-checked', on ? 'true' : 'false');
+  btn.querySelector('.switch-state').textContent = on ? 'ON' : 'OFF';
+}
+
+/** Tank geometry: y = 30 is 200 cm above the bottom (sensor face), y = 230 is the bottom. */
+function renderTank(floodLevel) {
+  const s = state.sensors, cfg = state.settings;
+  const waterH = clamp(SENSOR_HEIGHT_CM - s.dist, 0, SENSOR_HEIGHT_CM);
+  $('tankWater').style.transform = 'scaleY(' + (waterH / SENSOR_HEIGHT_CM) + ')';
+  const surfaceY = 30 + s.dist;
+  $('tankBeam').setAttribute('y2', String(Math.max(26, surfaceY)));
+  const cy = 30 + cfg.cautionDist, dy = 30 + cfg.dangerDist;
+  $('tankCautionLine').setAttribute('y1', cy); $('tankCautionLine').setAttribute('y2', cy);
+  $('tankDangerLine').setAttribute('y1', dy); $('tankDangerLine').setAttribute('y2', dy);
+  // Keep labels apart when the lines are close together
+  const labelGap = 13;
+  const dLblY = dy + 4;
+  const cLblY = Math.max(cy + 4, dLblY + labelGap);
+  $('tankCautionLbl').setAttribute('y', cLblY);
+  $('tankDangerLbl').setAttribute('y', dLblY);
+  $('tankCautionLbl').textContent = 'Caution ' + cfg.cautionDist;
+  $('tankDangerLbl').textContent = 'Danger ' + cfg.dangerDist;
+  $('tankHeight').textContent = waterH + ' cm';
+  $('tankDist').textContent = s.dist + ' cm';
+  $('tankChip').innerHTML = chipHTML(floodLevel);
+  $('tankDesc').textContent = 'Water tank: water height ' + waterH + ' cm, surface ' + s.dist + ' cm below the sensor. Caution line at ' +
+    cfg.cautionDist + ' cm and danger line at ' + cfg.dangerDist + ' cm from the sensor. Flood status ' + floodLevel + '.';
+}
+
+function syncSettingsForm() {
+  $('setCaution').value = state.settings.cautionDist;
+  $('setDanger').value = state.settings.dangerDist;
+  $('setGas').value = state.settings.gasThreshold;
+  $('setBuzzer').checked = state.settings.buzzerEnabled;
+  ['setCaution', 'setDanger', 'setGas'].forEach((id) => $(id).removeAttribute('aria-invalid'));
+}
+
+/** Push sensor values into the controls (used by the demo and serial input). */
+function syncControls() {
+  $('distSlider').value = state.sensors.dist;
+  $('gasSlider').value = state.sensors.gas;
+}
+
+/* =========================================================================
+   6. CHART (canvas, no libraries)
+   ========================================================================= */
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function recordSample() {
+  if (state.chartPaused) return;
+  state.history.push({ dist: state.sensors.dist, gas: state.sensors.gas });
+  if (state.history.length > HISTORY_LEN) state.history.shift();
+  drawChart();
+  $('chartSummary').textContent = 'Latest sample: distance ' + state.sensors.dist + ' cm, gas level ' + state.sensors.gas + ' %. ' + state.history.length + ' samples recorded.';
+}
+
+function drawChart() {
+  const canvas = $('chart');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return; // hidden tab
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 44, r: 44, t: 10, b: 26 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+  const yDist = (d) => pad.t + ph - (d / DIST_MAX) * ph;
+  const yGas = (g) => pad.t + ph - (g / 100) * ph;
+  const xAt = (i) => pad.l + (i / (HISTORY_LEN - 1)) * pw;
+
+  const muted = cssVar('--muted'), grid = cssVar('--chart-grid');
+  ctx.font = '11px ' + cssVar('--font-ui');
+  ctx.lineWidth = 1;
+
+  // Grid and axis labels
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (ph * i) / 4;
+    ctx.strokeStyle = grid; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + pw, y); ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.textAlign = 'right'; ctx.fillText(String(DIST_MAX - (DIST_MAX * i) / 4), pad.l - 8, y + 4);
+    ctx.textAlign = 'left'; ctx.fillText(String(100 - 25 * i), pad.l + pw + 8, y + 4);
+  }
+  ctx.textAlign = 'left'; ctx.fillText('cm', 4, pad.t + ph + 18);
+  ctx.textAlign = 'right'; ctx.fillText('%', w - 4, pad.t + ph + 18);
+  ctx.textAlign = 'center'; ctx.fillText('−60 s', pad.l, pad.t + ph + 18); ctx.fillText('now', pad.l + pw, pad.t + ph + 18);
+
+  // Threshold lines (dashed) with text labels
+  const thresholds = [
+    { y: yDist(state.settings.cautionDist), color: cssVar('--amber'), label: 'Caution ' + state.settings.cautionDist + ' cm', dash: [6, 4] },
+    { y: yDist(state.settings.dangerDist), color: cssVar('--red'), label: 'Danger ' + state.settings.dangerDist + ' cm', dash: [6, 4] },
+    { y: yGas(state.settings.gasThreshold), color: muted, label: 'Gas ' + state.settings.gasThreshold + ' %', dash: [2, 4] }
+  ];
+  ctx.lineWidth = 2;
+  for (const t of thresholds) {
+    ctx.strokeStyle = t.color; ctx.setLineDash(t.dash);
+    ctx.beginPath(); ctx.moveTo(pad.l, t.y); ctx.lineTo(pad.l + pw, t.y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = muted; ctx.textAlign = 'left';
+    ctx.fillText(t.label, pad.l + 6, t.y - 4);
+  }
+
+  // Series (right-aligned so the newest sample is at "now")
+  const data = state.history;
+  const offset = HISTORY_LEN - data.length;
+  const series = [
+    { color: cssVar('--chart-dist'), y: (p) => yDist(p.dist), label: 'Distance' },
+    { color: cssVar('--chart-gas'), y: (p) => yGas(p.gas), label: 'Gas' }
+  ];
+  ctx.setLineDash([]); ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  for (const s of series) {
+    if (!data.length) continue;
+    ctx.strokeStyle = s.color; ctx.beginPath();
+    data.forEach((p, i) => { const x = xAt(i + offset), y = s.y(p); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    // End point marker + label so the series are identifiable without colour
+    const last = data[data.length - 1];
+    const lx = xAt(HISTORY_LEN - 1), ly = s.y(last);
+    ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cssVar('--text'); ctx.textAlign = 'right';
+    ctx.fillText(s.label, lx - 8, ly - 8);
+  }
+  if (!data.length) {
+    ctx.fillStyle = muted; ctx.textAlign = 'center';
+    ctx.fillText('Collecting samples…', pad.l + pw / 2, pad.t + ph / 2);
+  }
+}
+
+/* =========================================================================
+   7. AUDIO (Web Audio API buzzer)
+   ========================================================================= */
+function getAudioContext() {
+  if (state.audio.ctx) return state.audio.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  try { state.audio.ctx = new AC(); } catch (e) { return null; }
+  return state.audio.ctx;
+}
+
+function setSoundBlocked(blocked) {
+  state.audio.blocked = blocked;
+  $('soundBtn').hidden = !blocked;
+  $('soundHint').hidden = !blocked;
+}
+
+function beep() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state !== 'running') {
+    ctx.resume().then(() => setSoundBlocked(false)).catch(() => {});
+    setSoundBlocked(true);
+    return;
+  }
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 1800;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.06, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+
+function startBeeping() {
+  if (state.audio.beepTimer) return;
+  beep();
+  state.audio.beepTimer = setInterval(beep, 600);
+}
+
+function stopBeeping() {
+  clearInterval(state.audio.beepTimer);
+  state.audio.beepTimer = null;
+  setSoundBlocked(false);
+}
+
+function updateBuzzer() {
+  const conds = state.conditions;
+  const anyDanger = conds.some((c) => c.level === 'DANGER');
+  const sounding = buzzerShouldSound(conds, state.settings, state.ackedKeys);
+  $('buzzer').classList.toggle('sounding', sounding);
+  let title, sub;
+  if (sounding) { title = 'Buzzer: sounding'; sub = 'Touch sensor or A to acknowledge'; }
+  else if (anyDanger && !state.settings.buzzerEnabled) { title = 'Buzzer: muted'; sub = 'Disabled in settings (M)'; }
+  else if (anyDanger) { title = 'Buzzer: silenced'; sub = 'Acknowledged. Red LED stays on'; }
+  else { title = 'Buzzer: off'; sub = 'No danger condition'; }
+  $('buzzerTitle').textContent = title;
+  $('buzzerSub').textContent = sub;
+  $('touchBtn').setAttribute('aria-label', 'Touch (acknowledge). ' + title);
+  if (sounding) startBeeping(); else stopBeeping();
+}
+
+/* =========================================================================
+   8. ACTIONS: acknowledge, mute, settings
+   ========================================================================= */
+function acknowledge(origin) {
+  state.lastTouch = new Date();
+  const dangers = state.conditions.filter((c) => c.level === 'DANGER');
+  if (dangers.length) {
+    dangers.forEach((c) => state.ackedKeys.add(c.key));
+    addLog('Touch', 'INFO', 'Acknowledged via ' + origin + ': buzzer silenced until ' + dangers.map((c) => c.message.toLowerCase()).join(' and ') + ' clears');
+  } else {
+    addLog('Touch', 'INFO', 'Touch via ' + origin + ': no active danger to acknowledge');
+  }
+  render();
+  updateBuzzer();
+}
+
+function setBuzzerEnabled(on, origin) {
+  if (state.settings.buzzerEnabled === on) return;
+  state.settings.buzzerEnabled = on;
+  $('setBuzzer').checked = on;
+  addLog('System', 'INFO', 'Buzzer ' + (on ? 'enabled' : 'muted') + ' (' + origin + ')');
+  updateBuzzer();
+}
+
+function readSettingsForm() {
+  const num = (id) => { const v = $(id).value.trim(); return v === '' ? NaN : Number(v); };
+  return {
+    cautionDist: num('setCaution'),
+    dangerDist: num('setDanger'),
+    gasThreshold: num('setGas'),
+    buzzerEnabled: $('setBuzzer').checked
+  };
+}
+
+function applySettings(e) {
+  e.preventDefault();
+  const next = readSettingsForm();
+  const err = validateSettings(next);
+  $('settingsOk').textContent = '';
+  ['setCaution', 'setDanger', 'setGas'].forEach((id) => $(id).removeAttribute('aria-invalid'));
+  if (err) {
+    $('settingsError').textContent = err;
+    const bad = /Caution/.test(err) ? 'setCaution' : /Danger/.test(err) ? 'setDanger' : 'setGas';
+    $(bad).setAttribute('aria-invalid', 'true');
+    $(bad).focus();
+    return;
+  }
+  $('settingsError').textContent = '';
+  state.settings = next;
+  addLog('System', 'INFO', 'Settings applied: caution ' + next.cautionDist + ' cm, danger ' + next.dangerDist + ' cm, gas ' + next.gasThreshold + ' %, buzzer ' + (next.buzzerEnabled ? 'on' : 'off'));
+  $('settingsOk').textContent = 'Settings applied.';
+  update();
+}
+
+function resetSettings() {
+  state.settings = Object.assign({}, DEFAULT_SETTINGS);
+  syncSettingsForm();
+  $('settingsError').textContent = '';
+  $('settingsOk').textContent = 'Defaults restored.';
+  addLog('System', 'INFO', 'Settings reset to defaults: caution 60 cm, danger 30 cm, gas 50 %, buzzer on');
+  update();
+}
+
+/* =========================================================================
+   9. DEMO SCENARIO (~40 s, scripted)
+   Distance and gas are interpolated between keyframes; PIR/IR switch at keyframes.
+   ========================================================================= */
+const DEMO_DURATION = 40;
+const DEMO_KEYS = [
+  { t: 0,  dist: 150, gas: 10, pir: false, ir: false, label: 'Normal conditions' },
+  { t: 4,  dist: 150, gas: 10, pir: false, ir: false, label: 'Water rising' },
+  { t: 10, dist: 50,  gas: 10, pir: false, ir: false, label: 'Water past the caution line' },
+  { t: 13, dist: 24,  gas: 10, pir: false, ir: false, label: 'Water past the danger line' },
+  { t: 17, dist: 24,  gas: 10, pir: false, ir: false, label: 'Water receding' },
+  { t: 22, dist: 150, gas: 10, pir: false, ir: false, label: 'Flood recovered' },
+  { t: 24, dist: 150, gas: 10, pir: false, ir: false, label: 'Gas leak starting' },
+  { t: 27, dist: 150, gas: 72, pir: false, ir: false, label: 'Gas leak' },
+  { t: 30, dist: 150, gas: 72, pir: false, ir: false, label: 'Ventilating' },
+  { t: 32, dist: 150, gas: 12, pir: false, ir: false, label: 'Gas cleared' },
+  { t: 33, dist: 150, gas: 12, pir: true,  ir: false, label: 'Person enters (PIR)' },
+  { t: 36, dist: 150, gas: 12, pir: true,  ir: true,  label: 'Obstacle appears (IR)' },
+  { t: 39, dist: 150, gas: 12, pir: false, ir: false, label: 'Area clear, back to normal' },
+  { t: 40, dist: 150, gas: 12, pir: false, ir: false, label: 'Back to normal' }
+];
+
+function demoValuesAt(t) {
+  let i = 0;
+  while (i < DEMO_KEYS.length - 1 && DEMO_KEYS[i + 1].t <= t) i++;
+  const a = DEMO_KEYS[i], b = DEMO_KEYS[Math.min(i + 1, DEMO_KEYS.length - 1)];
+  const f = b.t === a.t ? 0 : clamp((t - a.t) / (b.t - a.t), 0, 1);
+  return {
+    dist: Math.round(a.dist + (b.dist - a.dist) * f),
+    gas: Math.round(a.gas + (b.gas - a.gas) * f),
+    pir: a.pir, ir: a.ir, label: a.label
+  };
+}
+
+function startDemo() {
+  if (state.demo.running || state.mode === 'serial') return;
+  getAudioContext(); // started by a user gesture, so audio can be unlocked here
+  if (state.audio.ctx && state.audio.ctx.state === 'suspended') state.audio.ctx.resume().catch(() => {});
+  state.demo.running = true;
+  state.demo.startedAt = performance.now();
+  state.ackedKeys.clear();
+  addLog('System', 'INFO', 'Demo scenario started');
+  $('demoProgressWrap').hidden = false;
+  $('demoHint').hidden = true;
+  setDemoButton(true);
+  demoTick();
+  state.demo.timer = setInterval(demoTick, 200);
+}
+
+function demoTick() {
+  const t = (performance.now() - state.demo.startedAt) / 1000;
+  if (t >= DEMO_DURATION) { stopDemo('Demo scenario finished'); return; }
+  const v = demoValuesAt(t);
+  state.sensors.dist = v.dist; state.sensors.gas = v.gas; state.sensors.pir = v.pir; state.sensors.ir = v.ir;
+  syncControls();
+  const pct = Math.round((t / DEMO_DURATION) * 100);
+  $('demoBar').style.transform = 'scaleX(' + (t / DEMO_DURATION) + ')';
+  $('demoProgress').setAttribute('aria-valuenow', String(pct));
+  if ($('demoPhase').textContent !== v.label) $('demoPhase').textContent = v.label;
+  update();
+}
+
+function stopDemo(reason) {
+  if (!state.demo.running) return;
+  clearInterval(state.demo.timer);
+  state.demo.timer = null;
+  state.demo.running = false;
+  $('demoProgressWrap').hidden = true;
+  $('demoHint').hidden = false;
+  $('demoBar').style.transform = 'scaleX(0)';
+  $('demoProgress').setAttribute('aria-valuenow', '0');
+  $('demoPhase').textContent = '';
+  setDemoButton(false);
+  addLog('System', 'INFO', reason);
+}
+
+function setDemoButton(running) {
+  $('demoBtnText').textContent = running ? 'Stop demo' : 'Run demo scenario';
+  $('demoIcon').innerHTML = running ? '<rect x="6" y="6" width="12" height="12" rx="1.5"/>' : '<path d="M7 4.5v15l12-7.5z"/>';
+}
+
+function toggleDemo() { if (state.demo.running) stopDemo('Demo stopped by user'); else startDemo(); }
+
+/** Any real user interaction with a sensor control stops the demo. */
+function userTouchedControl(e) {
+  if (e && e.isTrusted && state.demo.running) stopDemo('Demo stopped: sensor control changed by user');
+}
+
+/* =========================================================================
+   10. EXPERIMENTAL: WEB SERIAL (USB cable, 9600 baud)
+   ========================================================================= */
+function setMode(mode) {
+  state.mode = mode;
+  const badge = $('modeBadge');
+  badge.dataset.mode = mode;
+  $('modeBadgeText').textContent = mode === 'serial' ? 'Live: USB serial' : 'Simulation Mode - not live hardware';
+  const disabled = mode === 'serial';
+  ['distSlider', 'gasSlider', 'pirSwitch', 'irSwitch', 'demoBtn'].forEach((id) => { $(id).disabled = disabled; });
+  $('sensorHint').textContent = disabled
+    ? 'Values come from the board over USB serial. Disconnect to use the on-screen controls.'
+    : "Simulated inputs. The page runs the project's alert logic on these values.";
+  $('serialBtn').textContent = disabled ? 'Disconnect board' : 'Connect to board (USB serial)';
+}
+
+async function connectSerial() {
+  const msg = $('serialMsg');
+  if (!('serial' in navigator)) {
+    msg.textContent = 'This browser does not support Web Serial. Try a recent desktop version of Chrome or Edge. The simulation keeps working without it.';
+    return;
+  }
+  try {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    stopDemo('Demo stopped: USB serial connected');
+    state.serial.port = port;
+    state.serial.badLines = 0;
+    state.serial.lastTouch = 0;
+    setMode('serial');
+    msg.textContent = 'Connected. Waiting for data lines…';
+    addLog('System', 'INFO', 'USB serial connected at 9600 baud');
+    readSerialLoop(port);
+  } catch (err) {
+    msg.textContent = err && err.name === 'NotFoundError' ? 'No port selected.' : 'Could not open the port: ' + (err && err.message ? err.message : 'unknown error') + '.';
+  }
+}
+
+async function readSerialLoop(port) {
+  const decoder = new TextDecoderStream();
+  state.serial.pipeDone = port.readable.pipeTo(decoder.writable).catch(() => {});
+  const reader = decoder.readable.getReader();
+  state.serial.reader = reader;
+  let buffer = '';
+  try {
+    for (;;) {
+      const r = await reader.read();
+      if (r.done) break;
+      buffer += r.value;
+      let nl;
+      while ((nl = buffer.search(/\r?\n/)) >= 0) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(buffer[nl] === '\r' ? nl + 2 : nl + 1);
+        if (line) handleSerialLine(line);
+      }
+      if (buffer.length > 512) buffer = ''; // drop runaway data without newlines
+    }
+  } catch (err) {
+    addLog('System', 'INFO', 'USB serial read stopped: ' + (err && err.message ? err.message : 'device disconnected'));
+  } finally {
+    try { reader.releaseLock(); } catch (e) { /* already released */ }
+  }
+  await closeSerial(false);
+}
+
+function handleSerialLine(line) {
+  const v = parseSerialLine(line);
+  if (!v) {
+    state.serial.badLines++;
+    $('serialMsg').textContent = 'Ignored ' + state.serial.badLines + ' line(s) not in the form GAS:35,PIR:1,IR:0,TOUCH:0,DIST:42.';
+    return;
+  }
+  state.sensors.gas = v.gas; state.sensors.dist = v.dist; state.sensors.pir = v.pir; state.sensors.ir = v.ir;
+  syncControls();
+  $('serialMsg').textContent = 'Last line at ' + formatTime(new Date()) + ': ' + line;
+  update();
+  // Touch acknowledges on the rising edge only
+  if (v.touch && !state.serial.lastTouch) acknowledge('board touch sensor');
+  state.serial.lastTouch = v.touch ? 1 : 0;
+}
+
+async function closeSerial(userInitiated) {
+  const s = state.serial;
+  if (!s.port) return;
+  const port = s.port;
+  s.port = null;
+  try { if (s.reader) await s.reader.cancel(); } catch (e) { /* ignore */ }
+  try { if (s.pipeDone) await s.pipeDone; } catch (e) { /* ignore */ }
+  try { await port.close(); } catch (e) { /* ignore */ }
+  s.reader = null; s.pipeDone = null;
+  setMode('sim');
+  $('serialMsg').textContent = userInitiated ? 'Disconnected.' : 'Board disconnected.';
+  addLog('System', 'INFO', 'USB serial disconnected, back to simulation');
+}
+
+/* =========================================================================
+   11. THEME, TABS, HELP POPOVER
+   ========================================================================= */
+const THEME_ORDER = ['system', 'light', 'dark'];
+function applyTheme(pref) {
+  state.themePref = pref;
+  if (pref === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', pref);
+  const label = pref.charAt(0).toUpperCase() + pref.slice(1);
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(pref) + 1) % 3];
+  $('themeBtnText').textContent = 'Theme: ' + label;
+  $('themeBtn').setAttribute('aria-label', 'Theme: ' + label + '. Switch to ' + next);
+  requestAnimationFrame(drawChart);
+}
+
+const TABS = ['dashboard', 'log', 'about'];
+function selectTab(name, focus) {
+  TABS.forEach((t) => {
+    const sel = t === name;
+    const tab = $('tab-' + t);
+    tab.setAttribute('aria-selected', sel ? 'true' : 'false');
+    tab.tabIndex = sel ? 0 : -1;
+    $('panel-' + t).hidden = !sel;
+    if (sel && focus) tab.focus();
+  });
+  if (name === 'dashboard') requestAnimationFrame(drawChart);
+}
+
+function toggleHelp(open) {
+  const pop = $('helpPop'), btn = $('helpBtn');
+  const isOpen = typeof open === 'boolean' ? open : pop.hidden;
+  pop.hidden = !isOpen;
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+/* =========================================================================
+   12. STATUS TABLE (About tab)
+   ========================================================================= */
+const STATUS_ROWS = [
+  ['Ultrasonic sensor', 'Component', true],
+  ['IR obstacle sensor', 'Component', true],
+  ['PIR sensor', 'Component', true],
+  ['Buzzer', 'Component', true],
+  ['LEDs', 'Component', true],
+  ['Soil moisture sensor with LCD', 'Component', true],
+  ['Gas sensor', 'Component', false],
+  ['Touch sensor', 'Component', false],
+  ['Flood monitoring', 'Application', false],
+  ['Gas-leak detection', 'Application', false],
+  ['Presence and obstacle monitoring', 'Application', false]
+];
+function renderStatusTable() {
+  const check = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>';
+  const pending = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 3" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>';
+  $('statusBody').innerHTML = STATUS_ROWS.map((r) =>
+    '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' +
+    (r[2] ? '<span class="badge-status demo">' + check + 'Demonstrated on hardware</span>' : '<span class="badge-status prop">' + pending + 'Proposed</span>') +
+    '</td></tr>').join('');
+}
+
+/* =========================================================================
+   13. EVENT WIRING
+   ========================================================================= */
+function wireEvents() {
+  // Sliders: readout updates instantly, evaluation is debounced
+  $('distSlider').addEventListener('input', (e) => {
+    userTouchedControl(e);
+    state.sensors.dist = Number(e.target.value);
+    $('distValue').textContent = state.sensors.dist + ' cm';
+    $('distFoot').textContent = (SENSOR_HEIGHT_CM - state.sensors.dist) + ' cm';
+    scheduleUpdate();
+  });
+  $('gasSlider').addEventListener('input', (e) => {
+    userTouchedControl(e);
+    state.sensors.gas = Number(e.target.value);
+    $('gasValue').textContent = state.sensors.gas + ' %';
+    scheduleUpdate();
+  });
+  $('pirSwitch').addEventListener('click', (e) => { userTouchedControl(e); state.sensors.pir = !state.sensors.pir; update(); });
+  $('irSwitch').addEventListener('click', (e) => { userTouchedControl(e); state.sensors.ir = !state.sensors.ir; update(); });
+  $('touchBtn').addEventListener('click', () => acknowledge('on-screen touch button'));
+
+  $('demoBtn').addEventListener('click', toggleDemo);
+  $('soundBtn').addEventListener('click', () => {
+    const ctx = getAudioContext();
+    if (ctx) ctx.resume().then(() => { setSoundBlocked(false); beep(); }).catch(() => {});
+  });
+
+  $('settingsForm').addEventListener('submit', applySettings);
+  $('resetBtn').addEventListener('click', resetSettings);
+  $('setBuzzer').addEventListener('change', (e) => setBuzzerEnabled(e.target.checked, 'settings'));
+
+  $('chartPauseBtn').addEventListener('click', (e) => {
+    state.chartPaused = !state.chartPaused;
+    e.currentTarget.setAttribute('aria-pressed', state.chartPaused ? 'true' : 'false');
+    e.currentTarget.textContent = state.chartPaused ? 'Resume recording' : 'Pause recording';
+  });
+
+  $('logFilter').addEventListener('change', (e) => { state.logFilter = e.target.value; renderLog(); });
+  $('clearLogBtn').addEventListener('click', () => { state.log = []; renderLog(); });
+  $('csvBtn').addEventListener('click', downloadCSV);
+
+  $('serialEnable').addEventListener('change', (e) => {
+    $('serialControls').hidden = !e.target.checked;
+    if (!e.target.checked) closeSerial(true);
+    else if (!('serial' in navigator)) {
+      $('serialMsg').textContent = 'This browser does not support Web Serial. Try a recent desktop version of Chrome or Edge. The simulation keeps working without it.';
+      $('serialBtn').disabled = true;
+    }
+  });
+  $('serialBtn').addEventListener('click', () => { if (state.mode === 'serial') closeSerial(true); else connectSerial(); });
+  if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', (e) => { if (state.serial.port && e.target === state.serial.port) closeSerial(false); });
+  }
+
+  // Theme
+  $('themeBtn').addEventListener('click', () => applyTheme(THEME_ORDER[(THEME_ORDER.indexOf(state.themePref) + 1) % 3]));
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onScheme = () => { if (state.themePref === 'system') drawChart(); };
+  if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
+
+  // Tabs with arrow-key navigation
+  TABS.forEach((t, i) => {
+    const tab = $('tab-' + t);
+    tab.addEventListener('click', () => selectTab(t, false));
+    tab.addEventListener('keydown', (e) => {
+      let n = null;
+      if (e.key === 'ArrowRight') n = (i + 1) % TABS.length;
+      else if (e.key === 'ArrowLeft') n = (i - 1 + TABS.length) % TABS.length;
+      else if (e.key === 'Home') n = 0;
+      else if (e.key === 'End') n = TABS.length - 1;
+      if (n !== null) { e.preventDefault(); selectTab(TABS[n], true); }
+    });
+  });
+
+  // Help popover
+  $('helpBtn').addEventListener('click', () => toggleHelp());
+  document.addEventListener('click', (e) => {
+    if (!$('helpPop').hidden && !e.target.closest('.popover-wrap')) toggleHelp(false);
+  });
+
+  // Unlock audio on the first user gesture (autoplay policies)
+  const unlock = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') ctx.resume().then(() => setSoundBlocked(false)).catch(() => {});
+  };
+  document.addEventListener('pointerdown', unlock, { once: true });
+  document.addEventListener('keydown', unlock, { once: true });
+
+  // Keyboard shortcuts: D demo, A acknowledge, M mute. Ignored while typing.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('helpPop').hidden) { toggleHelp(false); $('helpBtn').focus(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target;
+    const typing = el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable ||
+      (el.tagName === 'INPUT' && ['number', 'text', 'search', 'email'].indexOf(el.type) !== -1));
+    if (typing) return;
+    const k = e.key.toLowerCase();
+    if (k === 'd') { e.preventDefault(); if (state.mode !== 'serial') toggleDemo(); }
+    else if (k === 'a') { e.preventDefault(); acknowledge('keyboard shortcut A'); }
+    else if (k === 'm') { e.preventDefault(); setBuzzerEnabled(!state.settings.buzzerEnabled, 'keyboard shortcut M'); }
+  });
+
+  // Redraw the chart when its box changes size
+  if ('ResizeObserver' in window) new ResizeObserver(() => drawChart()).observe($('chart'));
+  else window.addEventListener('resize', drawChart);
+
+  // Clean up timers and the serial port when the page goes away
+  window.addEventListener('pagehide', () => {
+    clearInterval(state.timers.sample);
+    clearTimeout(state.timers.debounce);
+    clearInterval(state.demo.timer);
+    stopBeeping();
+    closeSerial(true);
+  });
+}
+
+/* =========================================================================
+   14. SELF-CHECK (run automatically, or call runSelfCheck() in the console)
+   ========================================================================= */
+function runSelfCheck() {
+  const cfg = Object.assign({}, DEFAULT_SETTINGS);
+  const base = { gas: 0, dist: 150, pir: false, ir: false };
+  const get = (over, key) => evaluateAlerts(Object.assign({}, base, over), cfg).find((c) => c.key === key);
+  const all = (over) => evaluateAlerts(Object.assign({}, base, over), cfg);
+  const tests = [
+    ['Flood: 61 cm (> caution 60) is NORMAL', () => get({ dist: 61 }, 'flood').level === 'NORMAL'],
+    ['Flood: 60 cm (= caution) is CAUTION', () => get({ dist: 60 }, 'flood').level === 'CAUTION'],
+    ['Flood: 31 cm (> danger 30) is CAUTION', () => get({ dist: 31 }, 'flood').level === 'CAUTION'],
+    ['Flood: 30 cm (= danger) is DANGER with buzzer', () => { const c = get({ dist: 30 }, 'flood'); return c.level === 'DANGER' && c.buzzer; }],
+    ['Flood: 2 cm is DANGER', () => get({ dist: 2 }, 'flood').level === 'DANGER'],
+    ['Gas: 49 % (< 50) is NORMAL', () => get({ gas: 49 }, 'gas').level === 'NORMAL'],
+    ['Gas: 50 % (= threshold) is DANGER "Gas leak warning" with buzzer', () => { const c = get({ gas: 50 }, 'gas'); return c.level === 'DANGER' && c.message === 'Gas leak warning' && c.buzzer; }],
+    ['PIR alone is CAUTION "Presence detected"', () => { const c = get({ pir: true }, 'presence'); return c.level === 'CAUTION' && c.message === 'Presence detected' && !c.buzzer; }],
+    ['IR alone is CAUTION "Obstacle detected"', () => { const c = get({ ir: true }, 'presence'); return c.level === 'CAUTION' && c.message === 'Obstacle detected' && !c.buzzer; }],
+    ['PIR + IR is DANGER "Person or object at a blocked point" with buzzer', () => { const c = get({ pir: true, ir: true }, 'presence'); return c.level === 'DANGER' && c.message === 'Person or object at a blocked point' && c.buzzer; }],
+    ['Overall: all clear is NORMAL', () => overallLevel(all({})) === 'NORMAL'],
+    ['Overall: flood caution + PIR is CAUTION', () => overallLevel(all({ dist: 50, pir: true })) === 'CAUTION'],
+    ['Overall: flood caution + gas leak is DANGER', () => overallLevel(all({ dist: 50, gas: 60 })) === 'DANGER'],
+    ['Buzzer: sounds on danger when enabled', () => buzzerShouldSound(all({ gas: 80 }), cfg, new Set()) === true],
+    ['Buzzer: silent on caution only', () => buzzerShouldSound(all({ dist: 50 }), cfg, new Set()) === false],
+    ['Buzzer: acknowledged danger is silent', () => buzzerShouldSound(all({ gas: 80 }), cfg, new Set(['gas'])) === false],
+    ['Buzzer: new un-acknowledged danger still sounds', () => buzzerShouldSound(all({ gas: 80, dist: 10 }), cfg, new Set(['gas'])) === true],
+    ['Buzzer: disabled in settings is silent', () => buzzerShouldSound(all({ gas: 80 }), Object.assign({}, cfg, { buzzerEnabled: false }), new Set()) === false],
+    ['Settings: defaults are valid', () => validateSettings(cfg) === ''],
+    ['Settings: danger >= caution is rejected', () => validateSettings(Object.assign({}, cfg, { dangerDist: 60 })) !== ''],
+    ['Settings: non-number is rejected', () => validateSettings(Object.assign({}, cfg, { gasThreshold: NaN })) !== ''],
+    ['Serial: valid line parses', () => { const v = parseSerialLine('GAS:35,PIR:1,IR:0,TOUCH:0,DIST:42'); return v && v.gas === 35 && v.pir && !v.ir && !v.touch && v.dist === 42; }],
+    ['Serial: malformed line is rejected', () => parseSerialLine('GAS:35,PIR:1') === null && parseSerialLine('hello') === null]
+  ];
+  let passed = 0;
+  console.groupCollapsed('%cAlert logic self-check', 'font-weight:bold');
+  for (const t of tests) {
+    let ok = false;
+    try { ok = !!t[1](); } catch (e) { ok = false; }
+    if (ok) passed++;
+    console.log((ok ? 'PASS' : 'FAIL') + '  ' + t[0]);
+  }
+  console.groupEnd();
+  const failed = tests.length - passed;
+  console.log('%cSelf-check: ' + passed + '/' + tests.length + ' PASS' + (failed ? ', ' + failed + ' FAIL' : ''), 'font-weight:bold;color:' + (failed ? '#C0392B' : '#0E9F6E'));
+  return { passed: passed, failed: failed };
+}
+window.runSelfCheck = runSelfCheck;
+
+/* =========================================================================
+   15. INIT
+   ========================================================================= */
+function init() {
+  const boot = window.__BOOT__ || {};
+  applyTheme(THEME_ORDER.indexOf(boot.theme) !== -1 ? boot.theme : 'system');
+  syncSettingsForm();
+  syncControls();
+  renderStatusTable();
+  wireEvents();
+  addLog('System', 'INFO', 'Simulation started with default settings (caution 60 cm, danger 30 cm, gas 50 %)');
+  update();
+  recordSample();
+  state.timers.sample = setInterval(recordSample, 1000);
+  if (TABS.indexOf(boot.tab) !== -1) selectTab(boot.tab, false);
+  runSelfCheck();
+}
+
+init();
+})();
+</script>
+</body>
+</html>
